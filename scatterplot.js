@@ -1,4 +1,4 @@
-function scatterplot(id, data, ints, i, j) {
+function scatterplot(id, cols, data, ints, i, j) {
 	let margin = {top: 6, right: 30, bottom: 18, left: 60};
 	let width = id.clientWidth;
 	let height = id.clientHeight;
