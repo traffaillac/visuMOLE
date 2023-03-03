@@ -22,7 +22,7 @@
 		.noUi-handle:after,.noUi-handle:before { display: none }
 		.noUi-handle:active { cursor: grabbing !important }
 		.noUi-tooltip { font-size: 12px }
-		#tooltip { position: absolute; text-align: right; padding: 4px; border: 1px solid grey; background-color: ghostwhite; font-size: 12px; border-radius: 4px; transform: translate(-100%, -50%); z-index: 1000 }
+		#tooltip { position: absolute; text-align: right; padding: 4px; border: 1px solid grey; background-color: ghostwhite; font-size: 12px; border-radius: 4px; transform: translate(-100%, 0); z-index: 1000 }
 	</style>
 	<script src=d3.v7.min.js></script>
 	<script src=nouislider.min.js></script>
@@ -35,21 +35,11 @@
 		<span class=onglet-titre>Cartes</span>
 		<span class=onglet-titre>Parallel sets</span>
 	</div>
-	<div id=onglet-scatterplot class=flexrowstretch style="height: 100%">
-		<div id=div_params class=flexcolstretch style="width: 45%; border-right: 1px solid lightgrey; overflow: scroll"></div>
-		<div class=flexcolstretch style="width: 55%">
-			<div style="flex: none; margin: 8px 8px 4px 8px; text-align: left">
-				<select id=sel_ord1 onchange="chg_vis(svg_in, sel_abs1, sel_ord1)"></select>
-			</div>
-			<svg id=svg_in style="flex: auto"></svg>
-			<div class=flexrowcenter style="flex: none; margin: 4px 8px; justify-content: space-between">
-				<select id=sel_ord2 onchange="chg_vis(svg_out, sel_abs2, sel_ord2)"></select>
-				<select id=sel_abs1 onchange="chg_vis(svg_in, sel_abs1, sel_ord1)" style="text-align: right"></select>
-			</div>
-			<svg id=svg_out style="flex: auto"></svg>
-			<div style="flex: none; margin: 4px 8px 8px 8px; text-align: right">
-				<select id=sel_abs2 onchange="chg_vis(svg_out, sel_abs2, sel_ord2)" style="text-align: right"></select>
-			</div>
+	<div id=onglet-scatterplot class=flexrowstretch style="height: calc(100% - 40px)">
+		<div id=div_sliders class=flexcolstretch style="width: 35%; border-right: 1px solid lightgrey; overflow: scroll"></div>
+		<div class=flexcolstretch style="width: 65%; padding: 4px">
+			<div id=div_scatterplot1 class=flexcolstretch style="height: 50%"></div>
+			<div id=div_scatterplot2 class=flexcolstretch style="height: 50%"></div>
 		</div>
 	</div>
 	<div id=onglet-cartes class=flexrowstretch style="display: none; height: 100%">
@@ -63,92 +53,53 @@
 	-->
 	<script>
 // fonction à appeler lorsqu'on modifie les sliders des paramètres
-function chg_params() {
-	int_sel = Array.from(div_params.children).map(div => div.lastElementChild.noUiSlider.get(true));
-	for (let [svg, abs, ord] of [[svg_in, sel_abs1, sel_ord1], [svg_out, sel_abs2, sel_ord2]]) {
-		let rect = svg.lastElementChild;
-		let i = cols_ag.indexOf(abs.value);
-		let j = cols_ag.indexOf(ord.value);
-		let [li, hi] = int_sel[i], [Li, Hi] = int_all[i];
-		let [lj, hj] = int_sel[j], [Lj, Hj] = int_all[j];
-		let x = svg.xscale, y = svg.yscale;
-		if (li === Li && hi === Hi && lj === Lj && hj === Hj) {
-			rect.setAttribute("display", "none");
-		} else {
-			rect.setAttribute("x", x(li));
-			rect.setAttribute("y", y(hj));
-			rect.setAttribute("width", x(hi) - x(li));
-			rect.setAttribute("height", y(lj) - y(hj));
-			rect.setAttribute("display", null);
-		}
-		d3.select(svg).selectAll("circle")
-			.data(donnees)
-			.join("circle")
-			.style("fill", "lightgrey")
-			.filter(d => int_sel.every((s, k) => d[k]>=s[0] && d[k]<=s[1]))
-			.style("fill", null);
-	}
-}
-
-// fonction à appeler lorsqu'on modifie les axes des visualisations
-function chg_vis(svg, abs, ord) {
-	scatterplot(svg, cols_ag, donnees, int_all, cols_ag.indexOf(abs.value), cols_ag.indexOf(ord.value), {top: 6, right: 30, bottom: 18, left: 60});
-	chg_params();
+function maj_slider() {
+	let ranges = Object.fromEntries(Array.from(div_sliders.children).map((d, i) => [cols_nag[i], d.lastElementChild.noUiSlider.get(true)]));
+	div_scatterplot1.maj_ranges(ranges);
+	div_scatterplot2.maj_ranges(ranges);
 }
 
 async function charger(f) {
 	let csv = d3.csvParseRows(await f.text());
-	iobjs = csv[0].findIndex(c => c.startsWith("objective$")) - 2;
-	cols_ag = csv[0].slice(2, csv[0].indexOf("evolution$samples")).map((c, i) => i<iobjs?c:c.slice(10));
+	let cols_ag = csv[0].slice(2, csv[0].indexOf("evolution$samples")).map((c, i) => c.startsWith("objective$")?c.slice(10):c);
 	cols_nag = csv[0].slice(cols_ag.length+3)
-	donnees = csv.slice(1).map(r => r.slice(2, 3+cols_ag.length).map(parseFloat));
-	donnees_ag = [];
-	donnees_nag = [];
+	let donnees_ag = [];
+	let donnees_nag = [];
 	for (let row of csv.slice(1)) {
 		let ag = Object.fromEntries(cols_ag.map((c, i) => [c, parseFloat(row[2+i])]));
 		ag._samples = [];
 		donnees_ag.push(ag);
 		row_nag = row.slice(cols_ag.length+3).map(s => JSON.parse(s));
 		for (let i = 0; i < row[cols_ag.length+2]; i++) {
-			let nag = Object.fromEntries(cols_nag.map((c, j) => [c, row_nag[j][i]]));
+			let nag = Object.fromEntries(cols_nag.map((c, j) => [c, +row_nag[j][i]]));
 			nag._parent = ag
 			ag._samples.push(nag);
 			donnees_nag.push(nag);
 		}
 	}
-	int_all = cols_ag.map((c, i) => d3.extent(donnees, d => d[i]));
-	int_sel = int_all;
+	cols_ag.sort().sort((a, b) => a.startsWith("om_") - b.startsWith("om_"));
+	cols_nag.sort().sort((a, b) => a.startsWith("om_") - b.startsWith("om_"));
+	let extents = Object.fromEntries(cols_nag.map(c => [c, d3.extent(donnees_nag, d => d[c])]));
 	
 	// génération de la liste de paramètres à contrôler
-	div_params.textContent = "";
-	for (let [i, c] of cols_ag.entries()) {
-		div_params.insertAdjacentHTML("beforeend", `<div class=flexcolstretch style="background-color: white; border-bottom: 1px solid lightgrey">
-			<span style="text-align: center; margin: 8px 0"><b>${i<iobjs?"Entrée":"Sortie"} :</b> ${c}</span>
+	div_sliders.textContent = "";
+	for (let c of cols_nag) {
+		div_sliders.insertAdjacentHTML("beforeend", `<div class=flexcolstretch style="background-color: white; border-bottom: 1px solid lightgrey">
+			<span style="text-align: center; margin: 8px 0"><b>${c.startsWith("om_")?"Sortie":"Entrée"} :</b> ${c}</span>
 			<div style="margin: 24px 40px 12px 40px"></div>
 		</div>`);
-		let slider = noUiSlider.create(div_params.lastElementChild.lastElementChild, {
-			start: int_all[i],
+		let slider = noUiSlider.create(div_sliders.lastElementChild.lastElementChild, {
+			start: extents[c],
 			connect: true,
-			range: {min: int_all[i][0], max: int_all[i][1]},
+			range: {min: extents[c][0], max: extents[c][1]},
 			tooltips: true});
-		slider.on("slide", chg_params);
+		slider.on("slide", maj_slider);
 	}
 	
 	// génération des visualisations initiales
-	for (let sel of [sel_abs1, sel_ord1, sel_abs2, sel_ord2]) {
-		sel.textContent = "";
-		sel.insertAdjacentHTML("beforeend", `<optgroup label="Entrées"></optgroup>`)
-		sel.insertAdjacentHTML("beforeend", `<optgroup label="Sorties"></optgroup>`)
-		for (let [i, c] of cols_ag.entries()) {
-			sel.children[+(i>=iobjs)].insertAdjacentHTML("beforeend", `<option>${c}</option>`);
-		}
-	}
-	sel_abs1.value = cols_ag[0];
-	sel_ord1.value = cols_ag[1];
-	sel_abs2.value = cols_ag[iobjs];
-	sel_ord2.value = cols_ag[iobjs+1];
-	scatterplot(svg_in, cols_ag, donnees, int_all, 0, 1);
-	scatterplot(svg_out, cols_ag, donnees, int_all, iobjs, iobjs+1);
+	let iobj_ag = cols_ag.findIndex(c => c.startsWith("om_"));
+	scatterplot(div_scatterplot1, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip);
+	scatterplot(div_scatterplot2, cols_ag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip);
 }
 
 (async () => {
