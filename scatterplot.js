@@ -1,4 +1,4 @@
-function scatterplot(id, cols, data, extents, i, j, tooltip) {
+function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 	// structure HTML avec sélecteurs d'axes
 	let div = d3.select(id)
 		.attr("class", "flexcolstretch")
@@ -24,10 +24,12 @@ function scatterplot(id, cols, data, extents, i, j, tooltip) {
 	let x = null;
 	let y = null;
 	let ranges = extents;
+	let selected = null;
 	
 	// fonction extérieure pour mettre à jour les points en surbrillance
-	id.maj_ranges = (r) => {
+	id.maj_couleurs = (r, s) => {
 		ranges = r;
+		selected = s;
 		let rect = svg.select("rect");
 		let [li, hi] = r[i], [Li, Hi] = extents[i];
 		let [lj, hj] = r[j], [Lj, Hj] = extents[j];
@@ -44,7 +46,9 @@ function scatterplot(id, cols, data, extents, i, j, tooltip) {
 			.join("circle")
 			.style("fill", "lightgrey")
 			.filter(d => Object.entries(d).every(([c, v]) => c.startsWith("_") || v>=ranges[c][0] && v<=ranges[c][1]))
-			.style("fill", null);
+			.style("fill", null)
+			.filter(d => (d._parent ?? d) === s)
+			.style("fill", "orange")
 	};
 	
 	// visualisation scatterplot
@@ -72,7 +76,7 @@ function scatterplot(id, cols, data, extents, i, j, tooltip) {
 			.join("circle")
 			.attr("cx", d => x(d[i]))
 			.attr("cy", d => y(d[j]))
-			.attr("r", d => 1 + 2 * Math.sqrt(d._samples ? d._samples.length : 1))
+			.attr("r", d => 1.5 + 2 * Math.sqrt(d._samples ? d._samples.length : 1))
 			.on("mouseenter", e => {
 				let bounds = e.target.getBoundingClientRect();
 				tooltip.innerHTML = Object.entries(e.target.__data__).filter(([c, v]) => c !== "_parent").map(([c, v]) => `${c==="_samples"?"échantillons":c} : <b>${c==="_samples"?v.length:v.toFixed(2)}</b>`).join("<br>");
@@ -82,14 +86,16 @@ function scatterplot(id, cols, data, extents, i, j, tooltip) {
 				tooltip.style.top = Math.min(Math.max((bounds.top + bounds.bottom) / 2 - height / 2, 0), window.innerHeight - height) + "px";
 			})
 			.on("mouseout", e => {
-				tooltip.style.display = "none"; })
+				tooltip.style.display = "none";
+			})
+			.on("click", e => sel_cb(e.target.__data__))
 		svg.append("rect")
 			.attr("display", "none")
 			.attr("fill", "none")
 			.attr("stroke", "#000")
 			.attr("stroke-dasharray", "5,5")
 			.style("pointer-events", "none")
-		id.maj_ranges(ranges);
+		id.maj_couleurs(ranges, selected);
 	}
 	maj_svg();
 }

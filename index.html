@@ -13,11 +13,11 @@
 		.flexcolcenter,.flexcolcenterwrap,.flexrowcenter,.flexrowcenterwrap { align-items: center }
 		body,text { font-family: Trebuchet MS }
 		circle { cursor: default; fill: dodgerblue; stroke-width: 1px; stroke: #fff }
-		circle:hover { fill: darkorchid }
+		circle:hover { cursor: pointer }
 		select { font-size: 14px; border: none; background: #eee; border-radius: 6px; padding: 1px }
 		.onglet-titre { display: flex; align-items: center; padding: 0 10px; height: 26px; background-color: lightskyblue; border-radius: 13px; cursor: pointer }
 		.noUi-target { height: 10px }
-		.noUi-connect { background: slateblue }
+		.noUi-connect { background: dodgerblue }
 		.noUi-horizontal .noUi-handle { cursor: grab; height: 18px; width: 18px; top: -5px; right: -9px; border-radius: 9px; box-shadow: none }
 		.noUi-handle:after,.noUi-handle:before { display: none }
 		.noUi-handle:active { cursor: grabbing !important }
@@ -36,8 +36,8 @@
 		<span class=onglet-titre>Parallel sets</span>
 	</div>
 	<div id=onglet-scatterplot class=flexrowstretch style="height: calc(100% - 40px)">
-		<div id=div_sliders class=flexcolstretch style="width: 35%; border-right: 1px solid lightgrey; overflow: scroll"></div>
-		<div class=flexcolstretch style="width: 65%; padding: 4px">
+		<div id=div_sliders class=flexcolstretch style="width: 30%; border-right: 1px solid lightgrey; overflow: scroll"></div>
+		<div class=flexcolstretch style="width: 70%; padding: 4px">
 			<div id=div_scatterplot1 class=flexcolstretch style="height: 50%"></div>
 			<div id=div_scatterplot2 class=flexcolstretch style="height: 50%"></div>
 		</div>
@@ -54,9 +54,16 @@
 	<script>
 // fonction à appeler lorsqu'on modifie les sliders des paramètres
 function maj_slider() {
-	let ranges = Object.fromEntries(Array.from(div_sliders.children).map((d, i) => [cols_nag[i], d.lastElementChild.noUiSlider.get(true)]));
-	div_scatterplot1.maj_ranges(ranges);
-	div_scatterplot2.maj_ranges(ranges);
+	ranges = Object.fromEntries(Array.from(div_sliders.children).map((d, i) => [cols_nag[i], d.lastElementChild.noUiSlider.get(true)]));
+	div_scatterplot1.maj_couleurs(ranges, donnee_sel);
+	div_scatterplot2.maj_couleurs(ranges, donnee_sel);
+}
+
+function sel_donnee(d) {
+	donnee_sel = d._parent ?? d;
+	console.log(donnee_sel._samples)
+	div_scatterplot1.maj_couleurs(ranges, donnee_sel);
+	div_scatterplot2.maj_couleurs(ranges, donnee_sel);
 }
 
 async function charger(f) {
@@ -80,6 +87,8 @@ async function charger(f) {
 	cols_ag.sort().sort((a, b) => a.startsWith("om_") - b.startsWith("om_"));
 	cols_nag.sort().sort((a, b) => a.startsWith("om_") - b.startsWith("om_"));
 	let extents = Object.fromEntries(cols_nag.map(c => [c, d3.extent(donnees_nag, d => d[c])]));
+	ranges = extents;
+	donnee_sel = null;
 	
 	// génération de la liste de paramètres à contrôler
 	div_sliders.textContent = "";
@@ -98,8 +107,8 @@ async function charger(f) {
 	
 	// génération des visualisations initiales
 	let iobj_ag = cols_ag.findIndex(c => c.startsWith("om_"));
-	scatterplot(div_scatterplot1, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip);
-	scatterplot(div_scatterplot2, cols_ag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip);
+	scatterplot(div_scatterplot1, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, sel_donnee);
+	scatterplot(div_scatterplot2, cols_ag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, sel_donnee);
 }
 
 (async () => {
