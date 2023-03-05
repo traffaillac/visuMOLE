@@ -22,7 +22,7 @@
 		.noUi-handle:after,.noUi-handle:before { display: none }
 		.noUi-handle:active { cursor: grabbing !important }
 		.noUi-tooltip { font-size: 12px }
-		#tooltip { position: absolute; text-align: right; padding: 4px; border: 1px solid grey; background-color: ghostwhite; font-size: 12px; border-radius: 4px; transform: translate(-100%, 0); z-index: 11 }
+		#tooltip { position: absolute; padding: 8px; border: 1px solid grey; background-color: ghostwhite; font-size: 12px; text-align: center; border-radius: 12px; transform: translate(-100%, 0); z-index: 11 }
 	</style>
 	<script src=d3.v7.min.js></script>
 	<script src=nouislider.min.js></script>
@@ -30,15 +30,12 @@
 	<script src=scatterplot.js></script>
 </head>
 <!-- TODO :
-	_ créer un dictionnaire de symboles par défaut
-	_ refaire la tooltip en tableau à 2 colonnes avec alignement central
-	_ utiliser les symboles dans les tooltips
-	_ retirer les zéros pour les valeurs entières
 	_ faire un layout pour les cartes avec 1 carte d'exemple et activer l'onglet
 	_ lors de chaque clic sur un cercle, mettre à jour les cartes
 	_ animer l'apparition/disparition des cartes
 	_ créer une nouvelle visualisation où les points sont des lignes courbes reliant les colonnes
 	_ mettre la création de carte dans une fonction et l'utiliser pour les tooltips
+	_ créer un dictionnaire de symboles par défaut
 	
 	_ demander aux auteurs d'OpenMOLE de générer un CSV avec des noms de colonnes non redondants
 	_ animer les points lors du changement d'axes
@@ -63,6 +60,10 @@
 	</div>
 	<div id=tooltip style="display: none"></div>
 	<script>
+Number.prototype.toMaxFixed = function(n) {
+	return Number.isInteger(this) ? this.toString() : this.toFixed(Math.max(n - Math.max(0, Math.floor(Math.log10(Math.abs(this)))), 0));
+}
+
 // fonction à appeler lorsqu'on modifie les sliders des paramètres
 function maj_slider() {
 	ranges = Object.fromEntries(Array.from(div_sliders.children).map((d, i) => [cols_nag[i], d.lastElementChild.noUiSlider.get(true)]));
@@ -116,6 +117,7 @@ async function charger(f) {
 	}
 	
 	// initialisation du sélecteur d'emoji
+	let unites = Object.fromEntries(cols_nag.map(c => [c, ""]));
 	let unite_active = null;
 	const picker = new EmojiMart.Picker({
 		data: await (await fetch("./emoji-mart-data.json")).json(),
@@ -130,6 +132,7 @@ async function charger(f) {
 				let top = t.offsetTop + t.offsetHeight;
 				picker.style.top = (top + picker.offsetHeight <= div_sliders.scrollHeight ? top : t.offsetTop - picker.offsetHeight) + "px";
 			} else {
+				unites[unite_active.previousElementSibling.textContent] = unite_active.value;
 				picker.style.display = "none";
 			}
 		},
@@ -144,8 +147,8 @@ async function charger(f) {
 	
 	// génération des visualisations initiales
 	let iobj_ag = cols_ag.findIndex(c => c.startsWith("om_"));
-	scatterplot(div_scatterplot1, cols_nag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, sel_donnee);
-	scatterplot(div_scatterplot2, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, sel_donnee);
+	scatterplot(div_scatterplot1, cols_nag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, unites, sel_donnee);
+	scatterplot(div_scatterplot2, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, unites, sel_donnee);
 }
 
 (async () => {

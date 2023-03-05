@@ -1,4 +1,4 @@
-function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
+function scatterplot(id, cols, data, extents, i, j, tooltip, unites, sel_cb) {
 	// structure HTML avec sélecteurs d'axes
 	let div = d3.select(id)
 		.attr("class", "flexcolstretch")
@@ -86,10 +86,10 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 				let d = e.target.__data__;
 				let bounds = e.target.getBoundingClientRect();
 				if (d._parent) {
-					tooltip.innerHTML = Object.entries(d).filter(([c, v]) => c !== "_parent").map(([c, v]) => `${c} : <b>${v.toFixed(2)}</b>`).join("<br>");
+					tooltip.innerHTML = "<table>" + Object.entries(d).filter(([c, v]) => c !== "_parent").map(([c, v]) => `<tr><th>${c}</th><td>${v.toMaxFixed(2)} ${unites[c]}</td></tr>`).join("") + "</table>";
 				} else {
 					let ext = cols.filter(c => c !== "_parent").map(c => [c, ...d3.extent(d._samples, s => s[c])]);
-					tooltip.innerHTML = `${d._samples.length} échantillon(s)<br>` + ext.map(([c, l, h]) => `${c} : <b>${l.toFixed(2)}${h===l?"":" - "+h.toFixed(2)}</b>`).join("<br>");
+					tooltip.innerHTML = `<table><tr><th colspan=2>${d._samples.length} échantillon(s)</th></tr>` + ext.map(([c, l, h]) => `<tr><th>${c}</th><td>${l.toMaxFixed(2)}${h===l?"":" - "+h.toMaxFixed(2)} ${unites[c]}</td></tr>`).join("") + "</table>";
 				}
 				tooltip.style.display = null;
 				tooltip.style.left = bounds.left + "px";
