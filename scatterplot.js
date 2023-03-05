@@ -10,8 +10,7 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 		.style("flex", "auto")
 		.style("user-select", "none")
 		.on("click", (e) => {
-			sel_cb({})
-			e.stopPropagation();
+			sel_cb(e.target.tagName == "circle" ? e.target.__data__ : {});
 		})
 	let abs = div.append("select")
 		.on("change", maj_svg)
@@ -20,8 +19,10 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 	for (let sel of [abs, ord]) {
 		let e = sel.append("optgroup").attr("label", "Entrées");
 		let s = sel.append("optgroup").attr("label", "Sorties");
-		for (let c of cols)
-			(c.startsWith("om_")?s:e).append("option").text(c)
+		for (let c of cols) {
+			if (data[0].hasOwnProperty(c))
+				(c.startsWith("om_")?s:e).append("option").text(c);
+		}
 	}
 	abs.property("value", i);
 	ord.property("value", j);
@@ -82,8 +83,14 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 			.attr("cy", d => y(d[j]))
 			.attr("r", d => 1.5 + 2 * Math.sqrt(d._samples ? d._samples.length : 1))
 			.on("mouseenter", e => {
+				let d = e.target.__data__;
 				let bounds = e.target.getBoundingClientRect();
-				tooltip.innerHTML = Object.entries(e.target.__data__).filter(([c, v]) => c !== "_parent").map(([c, v]) => `${c==="_samples"?"échantillons":c} : <b>${c==="_samples"?v.length:v.toFixed(2)}</b>`).join("<br>");
+				if (d._parent) {
+					tooltip.innerHTML = Object.entries(d).filter(([c, v]) => c !== "_parent").map(([c, v]) => `${c} : <b>${v.toFixed(2)}</b>`).join("<br>");
+				} else {
+					let ext = cols.filter(c => c !== "_parent").map(c => [c, ...d3.extent(d._samples, s => s[c])]);
+					tooltip.innerHTML = `${d._samples.length} échantillon(s)<br>` + ext.map(([c, l, h]) => `${c} : <b>${l.toFixed(2)}${h===l?"":" - "+h.toFixed(2)}</b>`).join("<br>");
+				}
 				tooltip.style.display = null;
 				tooltip.style.left = bounds.left + "px";
 				let height = tooltip.getBoundingClientRect().height;
@@ -91,10 +98,6 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 			})
 			.on("mouseout", e => {
 				tooltip.style.display = "none";
-			})
-			.on("click", e => {
-				sel_cb(e.target.__data__);
-				e.stopPropagation();
 			})
 		svg.append("rect")
 			.attr("display", "none")

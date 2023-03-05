@@ -22,16 +22,15 @@
 		.noUi-handle:after,.noUi-handle:before { display: none }
 		.noUi-handle:active { cursor: grabbing !important }
 		.noUi-tooltip { font-size: 12px }
-		#tooltip { position: absolute; text-align: right; padding: 4px; border: 1px solid grey; background-color: ghostwhite; font-size: 12px; border-radius: 4px; transform: translate(-100%, 0); z-index: 1000 }
+		#tooltip { position: absolute; text-align: right; padding: 4px; border: 1px solid grey; background-color: ghostwhite; font-size: 12px; border-radius: 4px; transform: translate(-100%, 0); z-index: 11 }
 	</style>
 	<script src=d3.v7.min.js></script>
 	<script src=nouislider.min.js></script>
+	<script src=emoji-mart.min.js></script>
 	<script src=scatterplot.js></script>
 </head>
 <!-- TODO :
-	_ échanger les visus scatterplot
-	_ indiquer sur les points parents les ranges des enfants
-	_ ajouter un input symbole pour chaque paramètre et retirer la mention Entrée/Sortie
+	_ créer un dictionnaire de symboles par défaut
 	_ refaire la tooltip en tableau à 2 colonnes avec alignement central
 	_ utiliser les symboles dans les tooltips
 	_ retirer les zéros pour les valeurs entières
@@ -52,8 +51,8 @@
 		<span class=onglet-titre>Cartes</span>
 		<span class=onglet-titre>Parallel sets</span>
 	</div>
-	<div id=onglet-scatterplot class=flexrowstretch style="height: calc(100% - 40px)">
-		<div id=div_sliders class=flexcolstretch style="width: 25%; border-right: 1px solid lightgrey; overflow: scroll"></div>
+	<div id=onglet-scatterplot class=flexrowstretch style="height: calc(100% - 36px)">
+		<div id=div_sliders class=flexcolstretch style="position: relative; width: 25%; border-right: 1px solid lightgrey; overflow-y: scroll"></div>
 		<div class=flexcolstretch style="width: 75%; padding: 4px">
 			<div id=div_scatterplot1 class=flexcolstretch style="height: 50%"></div>
 			<div id=div_scatterplot2 class=flexcolstretch style="height: 50%"></div>
@@ -100,12 +99,12 @@ async function charger(f) {
 	let extents = Object.fromEntries(cols_nag.map(c => [c, d3.extent(donnees_nag, d => d[c])]));
 	ranges = extents;
 	donnee_sel = null;
-	
+
 	// génération de la liste de paramètres à contrôler
 	div_sliders.textContent = "";
 	for (let c of cols_nag) {
-		div_sliders.insertAdjacentHTML("beforeend", `<div class=flexcolstretch style="background-color: white; border-bottom: 1px solid lightgrey">
-			<span style="text-align: center; margin: 8px 0"><b>${c.startsWith("om_")?"Sortie":"Entrée"} :</b> ${c}</span>
+		div_sliders.insertAdjacentHTML("beforeend", `<div class=flexcolstretch style="border-bottom: 1px solid lightgrey">
+			<span style="text-align: center; margin: 8px 0"><b>${c}</b> <input class=unite placeholder="unité" size=6 style="font-size: small"></span>
 			<div style="margin: 24px 40px 12px 40px"></div>
 		</div>`);
 		let slider = noUiSlider.create(div_sliders.lastElementChild.lastElementChild, {
@@ -116,10 +115,37 @@ async function charger(f) {
 		slider.on("slide", maj_slider);
 	}
 	
+	// initialisation du sélecteur d'emoji
+	let unite_active = null;
+	const picker = new EmojiMart.Picker({
+		data: await (await fetch("./emoji-mart-data.json")).json(),
+		emojiSize: 20,
+		emojiButtonSize: 24,
+		onClickOutside(e) {
+			let t = e.target;
+			if (t.className === "unite") {
+				unite_active = t;
+				picker.style.display = null;
+				picker.style.left = (div_sliders.offsetWidth - picker.offsetWidth) / 2 + "px";
+				let top = t.offsetTop + t.offsetHeight;
+				picker.style.top = (top + picker.offsetHeight <= div_sliders.scrollHeight ? top : t.offsetTop - picker.offsetHeight) + "px";
+			} else {
+				picker.style.display = "none";
+			}
+		},
+		onEmojiSelect({native}) {
+			unite_active.value += native;
+		},
+	});
+	picker.style.display = "none";
+	picker.style.position = "absolute";
+	picker.style.zIndex = "10";
+	div_sliders.appendChild(picker);
+	
 	// génération des visualisations initiales
 	let iobj_ag = cols_ag.findIndex(c => c.startsWith("om_"));
-	scatterplot(div_scatterplot1, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, sel_donnee);
-	scatterplot(div_scatterplot2, cols_ag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, sel_donnee);
+	scatterplot(div_scatterplot1, cols_nag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, sel_donnee);
+	scatterplot(div_scatterplot2, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, sel_donnee);
 }
 
 (async () => {
