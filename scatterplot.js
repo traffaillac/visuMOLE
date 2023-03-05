@@ -10,7 +10,7 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, unites, sel_cb) {
 		.style("flex", "auto")
 		.style("user-select", "none")
 		.on("click", (e) => {
-			sel_cb(e.target.tagName == "circle" ? e.target.__data__ : {});
+			sel_cb(e.target.tagName == "circle" ? e.target.__data__ : null);
 		})
 	let abs = div.append("select")
 		.on("change", maj_svg)
@@ -86,9 +86,9 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, unites, sel_cb) {
 				let d = e.target.__data__;
 				let bounds = e.target.getBoundingClientRect();
 				if (d._parent) {
-					tooltip.innerHTML = "<table>" + Object.entries(d).filter(([c, v]) => c !== "_parent").map(([c, v]) => `<tr><th>${c}</th><td>${v.toMaxFixed(2)} ${unites[c]}</td></tr>`).join("") + "</table>";
+					tooltip.innerHTML = "<table>" + cols.map(c => `<tr><th>${c}</th><td>${d[c].toMaxFixed(2)} ${unites[c]}</td></tr>`).join("") + "</table>";
 				} else {
-					let ext = cols.filter(c => c !== "_parent").map(c => [c, ...d3.extent(d._samples, s => s[c])]);
+					let ext = cols.map(c => [c, ...d3.extent(d._samples, s => s[c])]);
 					tooltip.innerHTML = `<table><tr><th colspan=2>${d._samples.length} échantillon(s)</th></tr>` + ext.map(([c, l, h]) => `<tr><th>${c}</th><td>${l.toMaxFixed(2)}${h===l?"":" - "+h.toMaxFixed(2)} ${unites[c]}</td></tr>`).join("") + "</table>";
 				}
 				tooltip.style.display = null;
