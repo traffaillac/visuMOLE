@@ -15,7 +15,7 @@
 		circle { cursor: default; fill: dodgerblue; stroke-width: 1px; stroke: #fff }
 		circle:hover { cursor: pointer }
 		select { font-size: 14px; border: none; background: #eee; border-radius: 6px; padding: 1px }
-		.onglet-titre { display: flex; align-items: center; padding: 0 10px; height: 26px; background-color: lightskyblue; border-radius: 13px; cursor: pointer }
+		.onglet-titre { display: flex; align-items: center; padding: 0 10px; height: 65%; background-color: lightskyblue; border-radius: 13px; cursor: pointer }
 		.noUi-target { height: 10px }
 		.noUi-connect { background: dodgerblue }
 		.noUi-horizontal .noUi-handle { cursor: grab; height: 18px; width: 18px; top: -5px; right: -9px; border-radius: 9px; box-shadow: none }
@@ -28,16 +28,33 @@
 	<script src=nouislider.min.js></script>
 	<script src=scatterplot.js></script>
 </head>
+<!-- TODO :
+	_ échanger les visus scatterplot
+	_ indiquer sur les points parents les ranges des enfants
+	_ ajouter un input symbole pour chaque paramètre et retirer la mention Entrée/Sortie
+	_ refaire la tooltip en tableau à 2 colonnes avec alignement central
+	_ utiliser les symboles dans les tooltips
+	_ retirer les zéros pour les valeurs entières
+	_ faire un layout pour les cartes avec 1 carte d'exemple et activer l'onglet
+	_ lors de chaque clic sur un cercle, mettre à jour les cartes
+	_ animer l'apparition/disparition des cartes
+	_ créer une nouvelle visualisation où les points sont des lignes courbes reliant les colonnes
+	_ mettre la création de carte dans une fonction et l'utiliser pour les tooltips
+	
+	_ demander aux auteurs d'OpenMOLE de générer un CSV avec des noms de colonnes non redondants
+	_ animer les points lors du changement d'axes
+	_ faut-il désaggréger les points ?
+-->
 <body class=flexcolstretch style="width: 100vw; height: 100vh">
-	<div class=flexrowcenter style="height: 40px; flex: none; background-color: ghostwhite; padding: 0 10px; gap: 15px; border-bottom: 1px solid #e8e8e8">
+	<div class=flexrowcenter style="height: 36px; flex: none; background-color: ghostwhite; padding: 0 8px; gap: 12px; border-bottom: 1px solid #e8e8e8">
 		<input type=file accept=text/csv onchange="charger(this.files[0])">
 		<span class=onglet-titre>Scatterplot</span>
 		<span class=onglet-titre>Cartes</span>
 		<span class=onglet-titre>Parallel sets</span>
 	</div>
 	<div id=onglet-scatterplot class=flexrowstretch style="height: calc(100% - 40px)">
-		<div id=div_sliders class=flexcolstretch style="width: 30%; border-right: 1px solid lightgrey; overflow: scroll"></div>
-		<div class=flexcolstretch style="width: 70%; padding: 4px">
+		<div id=div_sliders class=flexcolstretch style="width: 25%; border-right: 1px solid lightgrey; overflow: scroll"></div>
+		<div class=flexcolstretch style="width: 75%; padding: 4px">
 			<div id=div_scatterplot1 class=flexcolstretch style="height: 50%"></div>
 			<div id=div_scatterplot2 class=flexcolstretch style="height: 50%"></div>
 		</div>
@@ -46,11 +63,6 @@
 		
 	</div>
 	<div id=tooltip style="display: none"></div>
-	<!-- NOTES :
-		_ demander aux auteurs d'OpenMOLE de générer un CSV avec des noms de colonnes non redondants
-		_ animer les points lors du changement d'axes
-		_ faut-il désaggréger les points ?
-	-->
 	<script>
 // fonction à appeler lorsqu'on modifie les sliders des paramètres
 function maj_slider() {
@@ -61,7 +73,6 @@ function maj_slider() {
 
 function sel_donnee(d) {
 	donnee_sel = d._parent ?? d;
-	console.log(donnee_sel._samples)
 	div_scatterplot1.maj_couleurs(ranges, donnee_sel);
 	div_scatterplot2.maj_couleurs(ranges, donnee_sel);
 }

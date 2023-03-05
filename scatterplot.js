@@ -9,6 +9,10 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 	let svg = div.append("svg")
 		.style("flex", "auto")
 		.style("user-select", "none")
+		.on("click", (e) => {
+			sel_cb({})
+			e.stopPropagation();
+		})
 	let abs = div.append("select")
 		.on("change", maj_svg)
 		.style("align-self", "end")
@@ -45,7 +49,7 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 		svg.selectAll("circle")
 			.join("circle")
 			.style("fill", "lightgrey")
-			.filter(d => Object.entries(d).every(([c, v]) => c.startsWith("_") || v>=ranges[c][0] && v<=ranges[c][1]))
+			.filter(d => (d._samples ?? [d]).some(s => Object.entries(s).every(([c, v]) => c.startsWith("_") || v>=ranges[c][0] && v<=ranges[c][1])))
 			.style("fill", null)
 			.filter(d => (d._parent ?? d) === s)
 			.style("fill", "orange")
@@ -88,7 +92,10 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, sel_cb) {
 			.on("mouseout", e => {
 				tooltip.style.display = "none";
 			})
-			.on("click", e => sel_cb(e.target.__data__))
+			.on("click", e => {
+				sel_cb(e.target.__data__);
+				e.stopPropagation();
+			})
 		svg.append("rect")
 			.attr("display", "none")
 			.attr("fill", "none")
