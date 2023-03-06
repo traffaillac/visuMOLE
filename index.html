@@ -22,16 +22,19 @@
 		.noUi-handle:after,.noUi-handle:before { display: none }
 		.noUi-handle:active { cursor: grabbing !important }
 		.noUi-tooltip { font-size: 12px }
-		.onglet-titre { display: flex; align-items: center; padding: 0 10px; height: 65%; background-color: lightskyblue; border-radius: 13px; cursor: pointer }
+		.onglet-titre { display: flex; align-items: center; padding: 0 10px; height: 65%; background-color: #a5d3ff; border-radius: 13px; cursor: pointer }
 		#tooltip { position: absolute; transform: translate(-100%, 0); z-index: 10 }
 	</style>
 	<script src=d3.v7.min.js></script>
 	<script src=nouislider.min.js></script>
 	<script src=emoji-mart.min.js></script>
+	<script src=parallelcoordinates.js></script>
 	<script src=scatterplot.js></script>
 </head>
 <!-- TODO :
 	_ créer une nouvelle visualisation où les points sont des lignes courbes reliant les colonnes
+	_ supporter le changement de couleur des lignes dans le parallel coordinates
+	_ supporter les tooltips dans la même visu
 	_ mettre la création de carte dans une fonction et l'utiliser pour les tooltips
 	_ créer un dictionnaire de symboles par défaut
 	
@@ -42,16 +45,17 @@
 <body class=flexcolstretch style="width: 100vw; height: 100vh">
 	<div class=flexrowcenter style="height: 36px; flex: none; background-color: ghostwhite; padding: 0 8px; gap: 12px; border-bottom: 1px solid #e8e8e8">
 		<input type=file accept=text/csv onchange="charger(this.files[0])">
-		<span class=onglet-titre onclick="visu_cartes.style.display='none';visu_scatterplot.style.display=null">Scatterplot</span>
-		<span class=onglet-titre onclick="visu_scatterplot.style.display='none';visu_cartes.style.display=null">Cartes</span>
-		<span class=onglet-titre>Parallel sets</span>
+		<span class=onglet-titre onclick="visu_scatterplot.style.display=null;visu_cartes.style.display='none';visu_parallel.style.display='none'">Scatterplot</span>
+		<span class=onglet-titre onclick="visu_scatterplot.style.display='none';visu_cartes.style.display=null;visu_parallel.style.display='none'">Cartes</span>
+		<span class=onglet-titre onclick="visu_scatterplot.style.display='none';visu_cartes.style.display='none';visu_parallel.style.display=null">Lignes</span>
 	</div>
 	<div class=flexrowstretch style="height: calc(100% - 36px)">
 		<div id=div_sliders class=flexcolstretch style="position: relative; width: 25%; border-right: 1px solid lightgrey; overflow-y: scroll"></div>
 		<div class=flexcolstretch style="width: 75%; padding: 4px; overflow-y: scroll">
-			<div id=visu_ag class=flexcolstretch style="height: 50%"></div>
-			<div id=visu_scatterplot class=flexcolstretch style="height: 50%"></div>
+			<div id=visu_ag style="height: 50%; flex: none"></div>
+			<div id=visu_scatterplot style="height: 50%; flex: none"></div>
 			<div id=visu_cartes class=flexrowstretch style="flex-wrap: wrap; gap: 6px; padding-top: 4px; height: 50%; display: none">Veuillez sélectionner un point pour en voir les détails ci-dessous...</div>
+			<div id=visu_parallel style="height: 50%; flex: none"></div>
 		</div>
 	</div>
 		
@@ -60,6 +64,9 @@
 	<script>
 Number.prototype.toMaxFixed = function(n) {
 	return Number.isInteger(+this) ? this.toString() : this.toFixed(Math.max(n - Math.max(0, Math.floor(Math.log10(Math.abs(this)))), 0));
+}
+Number.prototype.toMaxDigits = function(n) {
+	return this.toPrecision(n - 3); // FIXME
 }
 
 // fonction à appeler lorsqu'on modifie les sliders des paramètres
@@ -157,6 +164,8 @@ async function charger(f) {
 	let iobj_ag = cols_ag.findIndex(c => c.startsWith("om_"));
 	scatterplot(visu_ag, cols_nag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, unites, sel_donnee);
 	scatterplot(visu_scatterplot, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, unites, sel_donnee);
+	parallelcoordinates(visu_parallel, cols_nag, donnees_nag, extents, tooltip, unites, sel_donnee);
+	visu_parallel.style.display = 'none'; // cacher la visualisation après l'avoir générée à bonne taille
 }
 
 (async () => {
