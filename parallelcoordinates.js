@@ -4,13 +4,32 @@ function parallelcoordinates(id, cols, data, extents, tooltip, unites, sel_cb) {
 	let svg = div.append("svg")
 		.style("width", "100%")
 		.style("height", "100%")
+	let x = null;
+	let y = null;
+	let ranges = extents;
+	let selected = null;
 	maj_svg();
+	
+	// fonction extérieure pour mettre à jour les points en surbrillance
+	id.maj_couleurs = (r, s) => {
+		ranges = r;
+		selected = s;
+		svg.selectAll(".line")
+			.style("stroke", "lightgrey")
+			.attr("stroke-opacity", .3)
+			.filter(d => Object.entries(d).every(([c, v]) => c.startsWith("_") || v>=ranges[c][0] && v<=ranges[c][1]))
+			.style("stroke", "dodgerblue")
+			.filter(d => d._parent === s)
+			.style("stroke", "orange")
+			.attr("stroke-opacity", 1)
+			.raise()
+	};
 	
 	function maj_svg() {
 		let {width, height} = svg.node().getBoundingClientRect();
 		let margin = {top: 5, right: 30, bottom: 64, left: 60};
-		let x = d3.scalePoint(cols, [margin.left, width - margin.right]);
-		let y = Object.fromEntries(cols.map(c => [c, d3.scaleLinear(extents[c], [height - margin.bottom, margin.top])]))
+		x = d3.scalePoint(cols, [margin.left, width - margin.right]);
+		y = Object.fromEntries(cols.map(c => [c, d3.scaleLinear(extents[c], [height - margin.bottom, margin.top])]))
 		let line = d3.line()
 			.x(([c]) => x(c))
 			.y(([c, v]) => y[c](v))
@@ -18,10 +37,11 @@ function parallelcoordinates(id, cols, data, extents, tooltip, unites, sel_cb) {
 		svg.append("g")
 			.attr("fill", "none")
 			.attr("stroke-width", 1.5)
-			.attr("stroke-opacity", .4)
+			.attr("stroke-opacity", .3)
 			.selectAll("path")
 			.data(data)
 			.join("path")
+			.attr("class", "line")
 			.attr("stroke", "dodgerblue")
 			.attr("d", d => line(cols.map(c => [c, d[c]])))
 		svg.append("g")

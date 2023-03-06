@@ -12,8 +12,9 @@
 		.flexcolcenterwrap,.flexcolstretchwrap,.flexrowcenterwrap,.flexrowstretchwrap { flex-wrap: wrap }
 		.flexcolcenter,.flexcolcenterwrap,.flexrowcenter,.flexrowcenterwrap { align-items: center }
 		body,text { font-family: Trebuchet MS }
-		circle { cursor: default; fill: dodgerblue; stroke-width: 1px; stroke: #fff }
+		circle { cursor: default; stroke-width: 1px; stroke: #fff }
 		circle:hover { cursor: pointer }
+		table { border-collapse: collapse }
 		select { font-size: 14px; border: none; background: #eee; border-radius: 6px; padding: 1px }
 		.carte { box-shadow: 0 0 3px grey; border-radius: 10px; padding: 6px; font-size: 12px; text-align: center; background-color: white }
 		.noUi-target { height: 10px }
@@ -35,6 +36,7 @@
 	_ créer une nouvelle visualisation où les points sont des lignes courbes reliant les colonnes
 	_ supporter le changement de couleur des lignes dans le parallel coordinates
 	_ supporter les tooltips dans la même visu
+	_ corriger le formatage des nombres dans la même visu
 	_ mettre la création de carte dans une fonction et l'utiliser pour les tooltips
 	_ créer un dictionnaire de symboles par défaut
 	
@@ -74,6 +76,7 @@ function maj_slider() {
 	ranges = Object.fromEntries(Array.from(div_sliders.children).slice(0, -1).map((d, i) => [cols_nag[i], d.lastElementChild.noUiSlider.get(true)]));
 	visu_ag.maj_couleurs(ranges, donnee_sel);
 	visu_scatterplot.maj_couleurs(ranges, donnee_sel);
+	visu_parallel.maj_couleurs(ranges, donnee_sel);
 }
 
 function sel_donnee(d) {
@@ -81,12 +84,18 @@ function sel_donnee(d) {
 	visu_ag.maj_couleurs(ranges, donnee_sel);
 	visu_scatterplot.maj_couleurs(ranges, donnee_sel);
 	maj_cartes();
+	visu_parallel.maj_couleurs(ranges, donnee_sel);
 }
 
 function maj_cartes() {
-	visu_cartes.innerHTML = (donnee_sel === null) ? "Veuillez sélectionner un point pour en voir les détails ci-dessous..." : null;
-	for (let d of donnees_nag.filter(d => d._parent === donnee_sel)) {
-		visu_cartes.insertAdjacentHTML("beforeend", "<div class=carte><table>" + cols_nag.map(c => `<tr><th>${c}</th><td>${d[c].toMaxFixed(2)} ${unites[c]}</td></tr>`).join('') + "</table></div>");
+	if (donnee_sel === null) {
+		visu_cartes.innerHTML = "Veuillez sélectionner un point pour en voir les détails ci-dessous...";
+	} else {
+		visu_cartes.innerHTML = null;
+		let ext = cols_nag.map(c => [c, ...d3.extent(donnee_sel._samples, s => s[c])]);
+		for (let d of donnee_sel._samples) {
+			visu_cartes.insertAdjacentHTML("beforeend", "<div class=carte><table>" + ext.map(([c, l, h]) => `<tr${l!==h?' style="background-color:#ffe0a6"':''}><th>${c}</th><td>${d[c].toMaxFixed(2)} ${unites[c]}</td></tr>`).join('') + "</table></div>");
+		}
 	}
 }
 
