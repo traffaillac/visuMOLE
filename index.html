@@ -33,9 +33,6 @@
 	<script src=scatterplot.js></script>
 </head>
 <!-- TODO :
-	_ mettre la création de carte dans une fonction et l'utiliser pour les tooltips
-	_ créer un dictionnaire de symboles par défaut
-	
 	_ demander aux auteurs d'OpenMOLE de générer un CSV avec des noms de colonnes non redondants
 	_ animer les points lors du changement d'axes
 -->
@@ -135,7 +132,8 @@ async function charger(f) {
 	}
 	
 	// initialisation du sélecteur d'emoji
-	unites = Object.fromEntries(cols_nag.map(c => [c, ""]));
+	const unites_init = {engagésInitiaux: '👤', nbChampsVisités: '🌾', nbCoupeurs: '🥷', nbSurveillants: '👮', participants: '👤', nombreBergers: '🧑‍🦯🐐', probaDenonce: '%', probaDiscu: '%', tpsAuChamp: '%', om_charette: '🪵', om_delatArbres: '🌳', om_delatMil: '🌾', om_nbCoupe: '✂️', om_stockMil: '🌾', om_trees: '🌳', om_underTrees: '🌳'};
+	unites = Object.fromEntries(cols_nag.map(c => [c, unites_init[c] ?? ""]));
 	let unite_active = null;
 	const picker = new EmojiMart.Picker({
 		data: await (await fetch("./emoji-mart-data.json")).json(),
