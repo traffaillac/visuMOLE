@@ -27,8 +27,9 @@
 		#tooltip { position: absolute; transform: translate(-100%, 0); z-index: 10 }
 	</style>
 	<script src=d3.v7.min.js></script>
-	<script src=nouislider.min.js></script>
 	<script src=emoji-mart.min.js></script>
+	<script src=nouislider.min.js></script>
+	<script src=rrweb-record.min.js></script>
 	<script src=parallelcoordinates.js></script>
 	<script src=scatterplot.js></script>
 </head>
@@ -117,10 +118,11 @@ async function charger(f) {
 	donnee_sel = null;
 
 	// génération de la liste de paramètres à contrôler
+	const unites_init = {engagésInitiaux: '👤', nbChampsVisités: '🌾', nbCoupeurs: '🥷', nbSurveillants: '👮', participants: '👤', nombreBergers: '🧑‍🦯🐐', probaDenonce: '%', probaDiscu: '%', tpsAuChamp: '%', om_charette: '🪵', om_delatArbres: '🌳', om_delatMil: '🌾', om_nbCoupe: '✂️', om_stockMil: '🌾', om_trees: '🌳', om_underTrees: '🌳'};
 	div_sliders.textContent = "";
 	for (let c of cols_nag) {
 		div_sliders.insertAdjacentHTML("beforeend", `<div class=flexcolstretch style="border-bottom: 1px solid lightgrey">
-			<span style="text-align: center; margin: 8px 0"><b>${c}</b> <input class=unite placeholder="unité" size=6 style="font-size: small"></span>
+			<span style="text-align: center; margin: 8px 0"><b>${c}</b> <input class=unite placeholder="unité" size=6 style="font-size: small" value="${unites_init[c]??''}"></span>
 			<div style="margin: 24px 40px 12px 40px"></div>
 		</div>`);
 		let slider = noUiSlider.create(div_sliders.lastElementChild.lastElementChild, {
@@ -132,7 +134,6 @@ async function charger(f) {
 	}
 	
 	// initialisation du sélecteur d'emoji
-	const unites_init = {engagésInitiaux: '👤', nbChampsVisités: '🌾', nbCoupeurs: '🥷', nbSurveillants: '👮', participants: '👤', nombreBergers: '🧑‍🦯🐐', probaDenonce: '%', probaDiscu: '%', tpsAuChamp: '%', om_charette: '🪵', om_delatArbres: '🌳', om_delatMil: '🌾', om_nbCoupe: '✂️', om_stockMil: '🌾', om_trees: '🌳', om_underTrees: '🌳'};
 	unites = Object.fromEntries(cols_nag.map(c => [c, unites_init[c] ?? ""]));
 	let unite_active = null;
 	const picker = new EmojiMart.Picker({
@@ -167,8 +168,25 @@ async function charger(f) {
 	let iobj_ag = cols_ag.findIndex(c => c.startsWith("om_"));
 	scatterplot(visu_ag, cols_nag, donnees_ag, extents, cols_ag[iobj_ag], cols_ag[iobj_ag+1], tooltip, unites, sel_donnee);
 	scatterplot(visu_scatterplot, cols_nag, donnees_nag, extents, cols_ag[0], cols_ag[1], tooltip, unites, sel_donnee);
+	visu_parallel.style.display = null;
 	parallelcoordinates(visu_parallel, cols_nag, donnees_nag, extents, tooltip, unites, sel_donnee);
 	visu_parallel.style.display = 'none'; // cacher la visualisation après l'avoir générée à bonne taille
+}
+
+// enregistrement des traces d'interaction toutes les minutes
+document.onclick = async (e) => {
+	document.onclick = null;
+	let dir = await showDirectoryPicker({mode: "readwrite"});
+	let events = [];
+	rrwebRecord({ emit(event) { events.push(event) }});
+	setInterval(async () => {
+		let json = JSON.stringify(events);
+		events.length = 0;
+		let file = await dir.getFileHandle(`log-${new Date().toISOString().replaceAll(':','_')}.json`, {create: true});
+		let writable = await file.createWritable();
+		await writable.write(json);
+		await writable.close();
+	}, 60000);
 }
 
 (async () => {
