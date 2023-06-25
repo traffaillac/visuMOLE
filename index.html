@@ -174,7 +174,7 @@ async function charger(f) {
 }
 
 // enregistrement des traces d'interaction toutes les minutes
-document.onclick = async (e) => {
+/*document.onclick = async (e) => {
 	document.onclick = null;
 	let dir = await showDirectoryPicker({mode: "readwrite"});
 	let events = [];
@@ -187,7 +187,7 @@ document.onclick = async (e) => {
 		await writable.write(json);
 		await writable.close();
 	}, 60000);
-}
+}*/
 
 (async () => {
 	charger(await fetch("test.csv"));
