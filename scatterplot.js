@@ -49,8 +49,10 @@ function scatterplot(id, cols, data, extents, i, j, tooltip, unites, sel_cb) {
 		}
 		svg.selectAll("circle")
 			.style("fill", "lightgrey")
-			.filter(d => (d._samples === undefined || d._samples.length >= r._len[0] && d._samples.length <= r._len[1]) &&
-				(d._samples ?? [d]).some(s => Object.entries(s).every(([c, v]) => c.startsWith("_") || v>=ranges[c][0] && v<=ranges[c][1])))
+			.style("display", "none")
+			.filter(d => d._samples === undefined || d._samples.length >= r._len[0] && d._samples.length <= r._len[1])
+			.style("display", "inline")
+			.filter(d => (d._samples ?? [d]).some(s => Object.entries(s).every(([c, v]) => c.startsWith("_") || v>=ranges[c][0] && v<=ranges[c][1])))
 			.style("fill", "dodgerblue")
 			.filter(d => (d._parent ?? d) === s)
 			.style("fill", "orange")
