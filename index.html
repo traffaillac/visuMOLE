@@ -67,7 +67,8 @@ Number.prototype.toMaxDigits = function(n) {
 
 // fonction à appeler lorsqu'on modifie les sliders des paramètres
 function maj_slider() {
-	ranges = Object.fromEntries(Array.from(div_sliders.children).slice(0, -1).map((d, i) => [cols_nag[i], d.lastElementChild.noUiSlider.get(true)]));
+	let c = ['_len'].concat(cols_nag);
+	ranges = Object.fromEntries(Array.from(div_sliders.children).slice(0, -1).map((d, i) => [c[i], d.lastElementChild.noUiSlider.get(true)]));
 	visu_ag.maj_couleurs(ranges, donnee_sel);
 	visu_scatterplot.maj_couleurs(ranges, donnee_sel);
 	visu_parallel.maj_couleurs(ranges, donnee_sel);
@@ -114,12 +115,22 @@ async function charger(f) {
 	cols_ag.sort().sort((a, b) => a.startsWith("om_") - b.startsWith("om_"));
 	cols_nag.sort().sort((a, b) => a.startsWith("om_") - b.startsWith("om_"));
 	let extents = Object.fromEntries(cols_nag.map(c => [c, d3.extent(donnees_nag, d => d[c])]));
+	extents._len = d3.extent(donnees_ag, d => d._samples.length);
 	ranges = extents;
 	donnee_sel = null;
 
 	// génération de la liste de paramètres à contrôler
 	const unites_init = {engagésInitiaux: '👤', nbChampsVisités: '🌾', nbCoupeurs: '🥷', nbSurveillants: '👮', participants: '👤', nombreBergers: '🧑‍🦯🐐', probaDenonce: '%', probaDiscu: '%', tpsAuChamp: '%', om_charette: '🪵', om_delatArbres: '🌳', om_delatMil: '🌾', om_nbCoupe: '✂️', om_stockMil: '🌾', om_trees: '🌳', om_underTrees: '🌳'};
-	div_sliders.textContent = "";
+	div_sliders.innerHTML = `<div class=flexcolstretch style="border-bottom: 1px solid lightgrey">
+			<b style="text-align: center; margin: 8px 0">Échantillons</b>
+			<div style="margin: 24px 40px 12px 40px"></div>
+		</div>`;
+	let slider = noUiSlider.create(div_sliders.lastElementChild.lastElementChild, {
+		start: extents._len,
+		connect: true,
+		range: {min: extents._len[0], max: extents._len[1]},
+		tooltips: true});
+	slider.on("slide", maj_slider);
 	for (let c of cols_nag) {
 		div_sliders.insertAdjacentHTML("beforeend", `<div class=flexcolstretch style="border-bottom: 1px solid lightgrey">
 			<span style="text-align: center; margin: 8px 0"><b>${c}</b> <input class=unite placeholder="unité" size=6 style="font-size: small" value="${unites_init[c]??''}"></span>
